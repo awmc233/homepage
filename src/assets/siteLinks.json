@@ -7,7 +7,7 @@
   {
     "icon": "Cloud",
     "name": "网盘",
-    "link": "https://pan.awmc233.top/"
+    "link": "https://www.lanzoui.com/"
   },
   {
     "icon": "CompactDisc",
@@ -21,7 +21,7 @@
   },
   {
     "icon": "Compass",
-    "name": "limestart",
+    "name": "limestart青柠起始页",
     "link": "https://limestart.cn/"
   },
   {
@@ -32,6 +32,6 @@
   {
     "icon": "LaptopCode",
     "name": "站点监测",
-    "link": "http://nezha.awmc233.top:8008/"
+    "link": "https://boce.aliyun.com/detect/http/1d30a5ef22704c03904107d3752fb3a8"
   }
 ]
