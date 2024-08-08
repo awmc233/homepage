@@ -2,12 +2,12 @@
   {
     "icon": "Blog",
     "name": "博客",
-    "link": "https://blog.awmc233.top/"
+    "link": "https://blog.awmc233.cn/"
   },
   {
     "icon": "Blog",
     "name": "论坛",
-    "link": "https://fourm.awmc233.top/"
+    "link": "https://fourm.awmc233.cn/"
   },
   {
     "icon": "CompactDisc",
@@ -17,7 +17,7 @@
   {
     "icon": "Cloud",
     "name": "网盘",
-    "link": "https://pan.awmc233.top/"
+    "link": "https://pan.awmc233.cn/"
   },
   {
     "icon": "Compass",
@@ -32,6 +32,6 @@
   {
     "icon": "LaptopCode",
     "name": "站点监测",
-    "link": "https://nezha.awmc233.top"
+    "link": "https://nezha.awmc233.cn"
   }
 ]
