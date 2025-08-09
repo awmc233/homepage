@@ -5,11 +5,6 @@
     "link": "https://blog.awmc233.cn/"
   },
   {
-    "icon": "Blog",
-    "name": "论坛",
-    "link": "https://fourm.awmc233.cn/"
-  },
-  {
     "icon": "CompactDisc",
     "name": "音乐",
     "link": "https://music.163.com/"
@@ -17,7 +12,7 @@
   {
     "icon": "Cloud",
     "name": "网盘",
-    "link": "https://pan.awmc233.cn/"
+    "link": "https://storage.imgnews.cn"
   },
   {
     "icon": "Compass",
@@ -32,6 +27,6 @@
   {
     "icon": "LaptopCode",
     "name": "站点监测",
-    "link": "https://nezha.awmc233.cn"
+    "link": "https://stats.uptimerobot.com/dPPcmmSZ0h"
   }
 ]
