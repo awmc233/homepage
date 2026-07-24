@@ -11,18 +11,14 @@
           {{ fullYear }}
           <a :href="siteUrl">{{ siteAnthor }}</a>
         </span>
-        <!-- 以下信息请不要修改哦 -->
-        <span class="hidden">
-          &amp;&nbsp;Made&nbsp;by
-          <a :href="config.github" target="_blank">
-            {{ config.author }}
-          </a>
-        </span>
         <!-- 站点备案 -->
-        <a v-if="siteIcp" href="https://beian.miit.gov.cn" target="_blank">
-          &amp;
-          {{ siteIcp }}
-        </a>
+<a v-if="siteIcp" href="https://beian.miit.gov.cn" target="_blank" style="margin-right: 8px;">
+  &amp; {{ siteIcp }}
+</a>
+<a href="https://beian.mps.gov.cn/#/query/webSearch?code=21030202000327" class="link-with-icon">
+  <img src="/icons/beian.png" alt="图标" class="icon">
+  辽公网安备21030202000327号
+</a>
       </div>
       <div v-else class="lrc">
         <Transition name="fade" mode="out-in">
@@ -36,6 +32,25 @@
     </Transition>
   </footer>
 </template>
+
+<style scoped>
+/* 合并并添加 line-height */
+.link-with-icon {
+  display: inline-flex;
+  align-items: flex-end;
+  text-decoration: none;
+  font-size: 16px;
+  line-height: 0.7;          /* ← 新增 */
+}
+
+.icon {
+  height: 1em;
+  width: auto;
+  margin-right: 0.1em;
+  flex-shrink: 0;
+  /* transform: translateY(0.08em); */   /* 先注释掉，观察效果 */
+}
+</style>
 
 <script setup>
 import { MusicOne } from "@icon-park/vue-next";

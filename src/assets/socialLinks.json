@@ -22,11 +22,5 @@
     "icon": "/images/icon/email.png",
     "tip": "Email我 （好复古啊）",
     "url": "mailto:awmc233@foxmail.com"
-  },
-  {
-    "name": "Telegram",
-    "icon": "/images/icon/telegram.png",
-    "tip": "你懂的 ~ （目前不可用）",
-    "url": "awmc233.cn/#"
   }
 ]
