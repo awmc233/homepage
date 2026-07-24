@@ -22,5 +22,11 @@
     "icon": "/images/icon/email.png",
     "tip": "Email我 （好复古啊）",
     "url": "mailto:awmc233@foxmail.com"
+  },
+  {
+    "name": "BiliBili",
+    "icon": "/images/icon/bilibili.png",
+    "tip": "我的直播间",
+    "url": "https://live.bilibili.com/1726450814"
   }
 ]
