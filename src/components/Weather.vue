@@ -18,11 +18,21 @@
 </template>
 
 <script setup>
-import { getAdcode, getWeather, getOtherWeather } from "@/api";
+import {
+  getAdcode,
+  getWeather,
+  getOtherWeather,
+  getDistrict,
+  getRegeo,
+  isAmapSuccess,
+  toText,
+} from "@/api";
 import { Error } from "@icon-park/vue-next";
 
 // 高德开发者 Key
 const mainKey = import.meta.env.VITE_WEATHER_KEY;
+// 兜底城市（可填 adcode 或城市名，留空则不启用）
+const fallbackCity = toText(import.meta.env.VITE_WEATHER_CITY);
 
 // 天气数据
 const weatherData = reactive({
@@ -38,18 +48,75 @@ const weatherData = reactive({
   },
 });
 
-// 获取天气数据
+// 根据 adcode 查询实时天气，并校验返回数据
+const fetchWeather = async (adcode) => {
+  const result = await getWeather(mainKey, adcode);
+  if (!isAmapSuccess(result) || !Array.isArray(result.lives) || !result.lives[0]) {
+    throw new Error(`天气接口未返回数据（city=${adcode}）`);
+  }
+  return result.lives[0];
+};
+
+// 方案一：高德 IP 定位
+// 该接口不支持 IPv6，返回 infocode 10000 但 adcode 为 [] 时必须判定为失败
+const locateByIp = async () => {
+  const result = await getAdcode(mainKey);
+  const adcode = toText(result?.adcode);
+  if (!isAmapSuccess(result) || !/^\d{6}$/.test(adcode)) {
+    console.warn("高德 IP 定位未返回有效城市（IPv6 / 代理 / 境外 IP 时常见）", result);
+    return null;
+  }
+  const city = toText(result.city) || toText(result.province) || "未知地区";
+  return { adcode, city, live: await fetchWeather(adcode) };
+};
+
+// 方案二：浏览器定位（仅在用户此前已授权时使用，避免首页弹出授权框）
+const locateByBrowser = async () => {
+  if (!navigator.geolocation || !navigator.permissions?.query) return null;
+  const permission = await navigator.permissions.query({ name: "geolocation" });
+  if (permission.state !== "granted") return null;
+
+  const position = await new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 8000 });
+  });
+  const { longitude, latitude } = position.coords;
+  const result = await getRegeo(mainKey, `${longitude},${latitude}`);
+  const component = result?.regeocode?.addressComponent;
+  const adcode = toText(component?.adcode);
+  if (!isAmapSuccess(result) || !/^\d{6}$/.test(adcode)) return null;
+  const city = toText(component.city) || toText(component.province) || "未知地区";
+  return { adcode, city, live: await fetchWeather(adcode) };
+};
+
+// 方案三：使用 .env 中配置的兜底城市
+const locateByFallback = async () => {
+  if (!fallbackCity) return null;
+  let adcode = /^\d{6}$/.test(fallbackCity) ? fallbackCity : null;
+  let city = null;
+
+  if (!adcode) {
+    const result = await getDistrict(mainKey, fallbackCity);
+    const district = result?.districts?.[0];
+    adcode = toText(district?.adcode);
+    city = toText(district?.name);
+    if (!isAmapSuccess(result) || !/^\d{6}$/.test(adcode)) {
+      console.warn("兜底城市解析失败", fallbackCity, result);
+      return null;
+    }
+  }
+  return { adcode, city, live: await fetchWeather(adcode) };
+};
+
+// 获取天气数据（依次尝试 IP 定位 → 浏览器定位 → 兜底城市）
 const getWeatherData = async () => {
   try {
-    // 获取地理位置信息
+    // 未配置 Key 时使用备用天气接口
     if (!mainKey) {
       console.log("未配置，使用备用天气接口");
       const result = await getOtherWeather();
-      console.log(result);
       const data = result.result;
       weatherData.adCode = {
         city: data.city.city_name || "未知地区",
-        // adcode: data.city.cityId,
       };
       weatherData.weather = {
         weather: data.condition.condition,
@@ -57,26 +124,35 @@ const getWeatherData = async () => {
         winddirection: data.condition.windDir,
         windpower: data.condition.windLevel,
       };
-    } else {
-      // 获取 Adcode
-      const adCode = await getAdcode(mainKey);
-      console.log(adCode);
-      if (adCode.infocode !== "10000") {
-        throw "地区查询失败";
-      }
-      weatherData.adCode = {
-        city: adCode.city,
-        adcode: adCode.adcode,
-      };
-      // 获取天气信息
-      const result = await getWeather(mainKey, weatherData.adCode.adcode);
-      weatherData.weather = {
-        weather: result.lives[0].weather,
-        temperature: result.lives[0].temperature,
-        winddirection: result.lives[0].winddirection,
-        windpower: result.lives[0].windpower,
-      };
+      return;
     }
+
+    let located = null;
+    for (const strategy of [locateByIp, locateByBrowser, locateByFallback]) {
+      try {
+        located = await strategy();
+      } catch (error) {
+        console.warn("天气定位方案失败，尝试下一种：", error);
+      }
+      if (located) break;
+    }
+
+    if (!located) {
+      throw new Error("所有定位方案均失败（IP 定位 / 浏览器定位 / 兜底城市）");
+    }
+
+    const live = located.live;
+    weatherData.adCode = {
+      // 城市名优先用定位结果，定位结果缺失时取天气接口返回的城市 / 省份
+      city: located.city || toText(live.city) || toText(live.province) || "未知地区",
+      adcode: located.adcode,
+    };
+    weatherData.weather = {
+      weather: live.weather,
+      temperature: live.temperature,
+      winddirection: live.winddirection,
+      windpower: live.windpower,
+    };
   } catch (error) {
     console.error("天气信息获取失败:" + error);
     onError("天气信息获取失败");

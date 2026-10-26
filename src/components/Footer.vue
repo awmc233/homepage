@@ -34,21 +34,19 @@
 </template>
 
 <style scoped>
-/* 合并并添加 line-height */
+/* 备案信息与版权文字共用同一基线，图标相对文字垂直居中 */
 .link-with-icon {
-  display: inline-flex;
-  align-items: flex-end;
-  text-decoration: none;
   font-size: 16px;
-  line-height: 0.7;          /* ← 新增 */
+  text-decoration: none;
+  white-space: nowrap;
 }
 
 .icon {
+  display: inline-block; /* 参与文字基线排版，避免整块下沉 */
   height: 1em;
   width: auto;
-  margin-right: 0.1em;
-  flex-shrink: 0;
-  /* transform: translateY(0.08em); */   /* 先注释掉，观察效果 */
+  margin-right: 1px; /* 图标与文字的间距，可按需 1px~4px 微调 */
+  vertical-align: -0.1em; /* 图标中心与文字视觉中心对齐 */
 }
 </style>
 
