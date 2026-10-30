@@ -149,6 +149,35 @@ VITE_SONG_TYPE = "playlist"
 VITE_SONG_ID = "7452421335"
 ```
 
+> **HTTPS 站点必读**：站点通过 `https` 访问时，音乐接口也必须是 `https` 或与站点同源，
+> 否则浏览器会以「混合内容（Mixed Content）」为由直接拦截请求，表现为本地 `pnpm dev` 正常、
+> 打包部署后播放器加载失败。推荐把 Meting-API 挂到站点同源的 `/api`：
+
+```nginx
+# https://example.com/api -> 本机 Meting-API
+location = /api {
+    proxy_pass http://127.0.0.1:3000;   # 不写 URI，原样转发 /api
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    # Meting-API 依赖该请求头拼装歌单里的音频 / 歌词地址，必须带上协议
+    proxy_set_header X-Forwarded-Host $scheme://$host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_read_timeout 30s;
+}
+```
+
+对应 `.env`：
+
+```bash
+# 生产环境走同源 /api，本地开发由 Vite 代理到后端
+VITE_SONG_API = "/api"
+SONG_API_PROXY = "http://127.0.0.1:3000"
+```
+
+也可以直接填写部署好的完整 `https` 地址（例如 Deno Deploy）。
+
 ### 字体
 
 现采用 `HarmonyOS Sans` 开源字体，采用字体拆分，提升加载速度

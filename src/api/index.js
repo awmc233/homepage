@@ -17,17 +17,55 @@ export const toText = (value) =>
  * 音乐播放器
  */
 
+// 音乐 API 基址
+// - 生产环境：与站点同源的 /api，由 nginx 反向代理到 Meting-API（http://127.0.0.1:3000）
+// - 也可以填写完整的 https 地址，例如 Deno Deploy 的部署地址
+const SONG_API = (import.meta.env.VITE_SONG_API || "/api").replace(/\/+$/, "");
+
+// Meting-API 返回歌单时，会把每首歌的 url / pic / lrc 替换成「它自己」的绝对地址，
+// 例如 http://43.143.242.186:3000/api?server=netease&type=url&id=xxx。
+// 站点是 https 时，这类 http 地址会被浏览器当作混合内容直接拦截
+//（pnpm dev 跑在 http://localhost 上，所以本地看不出问题）。
+// 这里统一把它们改写成配置的 API 基址，其余 http 资源在 https 页面下升级为 https。
+const toMediaUrl = (raw) => {
+  if (!raw) return raw;
+
+  let url;
+  try {
+    url = new URL(raw, window.location.origin);
+  } catch {
+    return raw;
+  }
+
+  // 形如 ?server=xxx&type=url|pic|lrc&id=xxx 的地址一定来自 Meting-API 自身
+  if (url.searchParams.has("server") && url.searchParams.has("type")) {
+    return `${SONG_API}${url.search}`;
+  }
+
+  // 网易云 CDN 等外部资源同时支持 https，https 页面下不能再用 http
+  if (url.protocol === "http:" && window.location.protocol === "https:") {
+    url.protocol = "https:";
+  }
+  return url.href;
+};
+
 // 获取音乐播放列表
 export const getPlayerList = async (server, type, id) => {
-  const res = await fetch(
-    `${import.meta.env.VITE_SONG_API}?server=${server}&type=${type}&id=${id}`,
-  );
-  const data = await res.json();
+  const res = await fetch(`${SONG_API}?server=${server}&type=${type}&id=${id}`);
+  if (!res.ok) {
+    throw new Error(`音乐接口请求失败：HTTP ${res.status}`);
+  }
 
-  if (data[0].url.startsWith("@")) {
+  const data = await res.json();
+  if (!Array.isArray(data) || data.length === 0) {
+    throw new Error("音乐接口没有返回歌曲");
+  }
+
+  // QQ 音乐（OVERSEAS=1）返回的 url 为 @handle@callback@func@url，需要再走一次 jsonp
+  if (typeof data[0].url === "string" && data[0].url.startsWith("@")) {
     // eslint-disable-next-line no-unused-vars
     const [handle, jsonpCallback, jsonpCallbackFunction, url] = data[0].url.split("@").slice(1);
-    const jsonpData = await fetchJsonp(url).then((res) => res.json());
+    const jsonpData = await fetchJsonp(url).then((r) => r.json());
     const domain = (
       jsonpData.req_0.data.sip.find((i) => !i.startsWith("http://ws")) ||
       jsonpData.req_0.data.sip[0]
@@ -37,18 +75,18 @@ export const getPlayerList = async (server, type, id) => {
       name: v.name || v.title,
       artist: v.artist || v.author,
       url: domain + jsonpData.req_0.data.midurlinfo[i].purl,
-      cover: v.cover || v.pic,
-      lrc: v.lrc,
-    }));
-  } else {
-    return data.map((v) => ({
-      name: v.name || v.title,
-      artist: v.artist || v.author,
-      url: v.url,
-      cover: v.cover || v.pic,
-      lrc: v.lrc,
+      cover: toMediaUrl(v.cover || v.pic),
+      lrc: toMediaUrl(v.lrc),
     }));
   }
+
+  return data.map((v) => ({
+    name: v.name || v.title,
+    artist: v.artist || v.author,
+    url: toMediaUrl(v.url),
+    cover: toMediaUrl(v.cover || v.pic),
+    lrc: toMediaUrl(v.lrc),
+  }));
 };
 
 /**
